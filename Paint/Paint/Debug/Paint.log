@@ -1,0 +1,2 @@
+﻿  stdafx.cpp
+c:\users\thanh tu\dropbox\paint\paint\stdafx.cpp : fatal error C1041: cannot open program database 'C:\Users\Thanh Tu\Dropbox\Paint\Paint\Debug\vc140.idb'; if multiple CL.EXE write to the same .PDB file, please use /FS
