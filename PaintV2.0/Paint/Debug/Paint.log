@@ -1,0 +1,5 @@
+﻿  Paint.cpp
+c:\users\thanh tu\dropbox\paint-master\paint\paint\paint.cpp(371): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\thanh tu\dropbox\paint-master\paint\paint\paint.cpp(994): warning C4101: 'textbox': unreferenced local variable
+  Paint.vcxproj -> C:\Users\Thanh Tu\Dropbox\Paint-master\Paint\Debug\Paint.exe
+  Paint.vcxproj -> C:\Users\Thanh Tu\Dropbox\Paint-master\Paint\Debug\Paint.pdb (Full PDB)
