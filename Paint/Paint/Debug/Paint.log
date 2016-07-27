@@ -1,2 +1,4 @@
-﻿  stdafx.cpp
-c:\users\thanh tu\dropbox\paint\paint\stdafx.cpp : fatal error C1041: cannot open program database 'C:\Users\Thanh Tu\Dropbox\Paint\Paint\Debug\vc140.idb'; if multiple CL.EXE write to the same .PDB file, please use /FS
+﻿  Paint.cpp
+d:\github\paint\paint\paint\paint.cpp(351): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+  Paint.vcxproj -> D:\GitHub\Paint\Paint\Debug\Paint.exe
+  Paint.vcxproj -> D:\GitHub\Paint\Paint\Debug\Paint.pdb (Full PDB)

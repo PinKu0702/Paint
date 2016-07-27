@@ -6,6 +6,7 @@
 #include <windowsx.h>
 #include <Windows.h>
 #include <fstream>
+#include <commdlg.h>
 
 #define MAX_LOADSTRING 100
 #define ID_TIMER1	123123
@@ -16,11 +17,15 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 POINT p1, p2, p2_ancien;
 HBITMAP hBitmap;
 BOOL enTrainDessin;
-int PenColor = 0;
 int currentPenWidth = 0;
 HPEN myPen = CreatePen(PS_SOLID, 5, RGB(0, 0, 0));
 int currentPenColor = 0;	// black
-
+DWORD penColor = 0;
+DWORD brushColor = 0;
+DWORD shapeColor = 0;
+CHOOSECOLOR cc;
+static COLORREF acrCustClr[16]; // array of custom colors
+static DWORD rgbCurrent;        // initial color selection
 
 int mode; //mode de dessin==> 0 pour ligne, 1 pour libre
 		  // Forward declarations of functions included in this code module:
@@ -28,6 +33,7 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK CustomizePen(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 VOID				DrawLineProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 VOID				FreeDrawProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 VOID DrawCircleProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -157,6 +163,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 	// TODO: Add any drawing code that uses hdc here...
 	HDC hdc = BeginPaint(hWnd, &ps);
+
+	
+
+
+
+
 	switch (mode)
 	{
 	case 0:
@@ -216,8 +228,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_PENBRUSH), hWnd, About);
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;
+		case ID_FORMAT_PEN:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_PEN), hWnd, CustomizePen);
 		case IDM_EXIT:
 			if (MessageBox(hWnd, _T("Are you sure to close?"), _T("Confirm close"), MB_OKCANCEL | MB_ICONQUESTION) == 1)
 			{
@@ -724,22 +738,10 @@ VOID FreeDrawProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 VOID ChangePenColor(HDC hdc)
 {
-	HPEN hPen = CreatePen(PS_SOLID, currentPenWidth, RGB(0, 0, 0));
-	switch (PenColor)
-	{
-	case 1:// red
-		hPen = CreatePen(PS_SOLID, currentPenWidth, RGB(255, 0, 0));
-		break;
-	case 2:// green
-		hPen = CreatePen(PS_SOLID, currentPenWidth, RGB(0, 255, 0));
-		break;
-	case 3:// blue
-		hPen = CreatePen(PS_SOLID, currentPenWidth, RGB(0, 0, 255));
-		break;
-	default:
-		break;
-	}
+	HPEN hPen = CreatePen(PS_SOLID, currentPenWidth, penColor);
+	HBRUSH hBrush = CreateSolidBrush(shapeColor);						//shapecolor
 	SelectObject(hdc, hPen);
+	SelectObject(hdc, hBrush);
 }
 void CreateBMPFile(HWND hwnd, LPTSTR pszFile, PBITMAPINFO pbi, HBITMAP hBMP, HDC hDC)
 {
@@ -867,23 +869,102 @@ PBITMAPINFO CreateBitmapInfoStruct(HWND hwnd, HBITMAP hBmp)
 }
 
 
-
-VOID PenBrushDemo(HDC hdc)
+INT_PTR CALLBACK CustomizePen(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HPEN hPen = CreatePen(PS_DASHDOT, 3, RGB(255, 0, 255));
-	SelectObject(hdc, hPen);
-	MoveToEx(hdc, 100, 100, NULL);
-	LineTo(hdc, 200, 200);
-	Rectangle(hdc, 100, 200, 300, 300);
-	Ellipse(hdc, 100, 200, 300, 300);
-	HRGN hRegion = CreateEllipticRgn(100, 200, 300, 300);
-	HBRUSH hbrush = CreateSolidBrush(RGB(23, 100, 40));
-	FillRgn(hdc, hRegion, hbrush);
-	Ellipse(hdc, 100, 200, 300, 300);
+	HWND handleText = GetDlgItem(hDlg,IDC_TEXTSIZE);
+	HDC btnPenColor = GetDC(GetDlgItem(hDlg, IDC_PENCOLOR));
+	HWND btnBrushColor = GetDlgItem(hDlg, IDC_BRUSHCOLOR);
+	HWND btnShapeColor = GetDlgItem(hDlg, IDC_SHAPECOLOR);
+
+	int tempPWidth = currentPenWidth;
+	DWORD tempPColor = penColor;
+	DWORD tempBColor = brushColor;
+	DWORD tempSColor = shapeColor;
+
+	// Initialize CHOOSECOLOR 
+	ZeroMemory(&cc, sizeof(cc));
+	cc.lStructSize = sizeof(cc);
+	cc.hwndOwner = hDlg;
+	cc.lpCustColors = (LPDWORD)acrCustClr;
+	cc.rgbResult = rgbCurrent;
+	cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		
+		return (INT_PTR)TRUE;
+
+	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		case IDC_SMALL:
+			tempPWidth = 5;
+			SetWindowText(handleText, _T("5"));
+			break;
+		case IDC_MEDIUM:
+			tempPWidth = 10;
+			SetWindowText(handleText, _T("10"));
+			break;
+		case IDC_BIG:
+			tempPWidth = 15;
+			SetWindowText(handleText, _T("15"));
+			break;
+		case IDC_PENCOLOR:
+			
+			if (ChooseColor(&cc) == TRUE)
+			{
+				tempPColor = cc.rgbResult;
+			}
+			break;
+		case IDC_BRUSHCOLOR:
+			if (ChooseColor(&cc) == TRUE)
+			{
+				tempBColor = cc.rgbResult;
+			}
+			break;
+		case IDC_SHAPECOLOR:
+			if (ChooseColor(&cc) == TRUE)
+			{
+				tempSColor = cc.rgbResult;
+			}
+			break;
+		case IDOK:
+			currentPenWidth = tempPWidth;
+			penColor = tempPColor;
+			brushColor = tempBColor;
+			shapeColor = tempSColor;
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		case IDCANCEL:
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		default:
+			break;
+		}
+
+		break;
+	}
+	return (INT_PTR)FALSE;
 }
 
+INT_PTR CALLBACK Text(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
 
-
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
+}
 
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
